@@ -1189,14 +1189,24 @@
    * the ordinary case is one tap on the KP and three photographs. It is on
    * screen in full underneath, so it is never sent unseen.
    */
-  /** The next KP to suggest: 100 m past the one just saved, same shape as
-      today -- still a plain guess the operator can type straight over. */
+  /** The next KP to suggest: usually 100 m past the one just saved, same
+      shape as today -- still a plain guess the operator can type straight
+      over. A handful of segments are walked in longer stretches per point,
+      so those step by 500 m instead. */
   var KP_STEP_METRES = 100;
+  var KP_STEP_METRES_WIDE = 500;
+  var WIDE_STEP_SEGMENTS = ['6', '11B', '11A', '10/12'];
+
+  function kpStepFor(segmentId) {
+    return WIDE_STEP_SEGMENTS.indexOf(segmentId) !== -1
+      ? KP_STEP_METRES_WIDE
+      : KP_STEP_METRES;
+  }
 
   function nextKpGuess(previousKp) {
     var metres = WT.kpMetres(previousKp);
     if (metres == null) return '';
-    return WT.kpFromMetres(metres + KP_STEP_METRES);
+    return WT.kpFromMetres(metres + kpStepFor(state.area.segment));
   }
 
   function resetAfterSave() {
