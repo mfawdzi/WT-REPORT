@@ -757,6 +757,40 @@
     });
   }
 
+  /**
+   * A short synthesised "jepret" click, one per shot -- no audio file needed,
+   * so there is nothing extra to bundle or cache offline.
+   */
+  var shutterAudioCtx = null;
+  function playShutterSound() {
+    try {
+      if (!shutterAudioCtx) {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        shutterAudioCtx = new Ctx();
+      }
+      var ctx = shutterAudioCtx;
+      var now = ctx.currentTime;
+
+      // Two quick clicks back to back, like a shutter's open-then-close.
+      [0, 0.06].forEach(function (delay) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1800, now + delay);
+        osc.frequency.exponentialRampToValueAtTime(600, now + delay + 0.04);
+        gain.gain.setValueAtTime(0.25, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.05);
+      });
+    } catch (e) {
+      // No audio, no problem -- the photo still gets taken.
+    }
+  }
+
   function runCameraSession(stream, shotsWanted) {
     var overlay = $('burst-camera');
     var video = $('burst-video');
@@ -796,6 +830,7 @@
       canvas.height = video.videoHeight;
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
       shutterBtn.disabled = true;
+      playShutterSound();
       canvas.toBlob(function (blob) {
         if (blob) blobs.push(blob);
         updateLabel();
