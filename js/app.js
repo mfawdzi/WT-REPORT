@@ -178,10 +178,30 @@
   }
 
   /** The roster, this team's members first — that is who is usually picked. */
+  /**
+   * The roster actually shown: the seeded list from options.js, plus whatever
+   * names a crew has added or removed on this phone. Kept separate from
+   * OPTIONS.roster itself so a code update never overwrites what a crew typed
+   * in the field.
+   */
+  var rosterExtra = { added: [], removedNames: [] };
+
+  function effectiveRoster() {
+    var removed = rosterExtra.removedNames;
+    var base = WT.OPTIONS.roster.filter(function (person) {
+      return removed.indexOf(person.name) === -1;
+    });
+    return base.concat(rosterExtra.added);
+  }
+
+  function saveRosterExtra() {
+    return WT.db.setPref('rosterExtra', rosterExtra);
+  }
+
   function rosterFor(teamId) {
     var mine = [];
     var rest = [];
-    WT.OPTIONS.roster.forEach(function (person) {
+    effectiveRoster().forEach(function (person) {
       (person.team === teamId ? mine : rest).push(person);
     });
     return { mine: mine, rest: rest };
@@ -327,6 +347,36 @@
           renderMates();
         });
 
+        /* A trash icon per row rather than a separate management screen: the
+           roster is short enough that removing a name is a rare, one-off tap
+           right where the name is seen, not a whole screen to build for it. */
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'pick-remove';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Hapus ' + person.name + ' dari roster');
+        remove.addEventListener('click', function (event) {
+          event.stopPropagation();
+          if (!confirm('Hapus ' + person.name + ' dari roster?')) return;
+
+          state.crew.mates = state.crew.mates.filter(function (name) {
+            return name !== person.name;
+          });
+
+          var addedAt = rosterExtra.added.indexOf(person);
+          if (addedAt !== -1) {
+            // A name we added: forget it entirely, nothing to keep excluded.
+            rosterExtra.added.splice(addedAt, 1);
+          } else if (rosterExtra.removedNames.indexOf(person.name) === -1) {
+            // A seeded name: keep it filtered out rather than deleting it from
+            // options.js, so a future code update cannot silently bring it back.
+            rosterExtra.removedNames.push(person.name);
+          }
+
+          saveRosterExtra().then(renderCrew);
+        });
+        row.appendChild(remove);
+
         list.appendChild(row);
       });
     }
@@ -343,6 +393,51 @@
       rows(rest);
     }
   }
+
+  /**
+   * Adding a name to the roster.
+   *
+   * Only the shape of the code is checked -- "BRA09-240600XX" -- never that it
+   * is unique or genuine. A crew standing on the ROW typing a colleague's badge
+   * from memory is not the moment to argue with them about formatting rules
+   * nobody explained.
+   */
+  var BADGE_PATTERN = /^[A-Z]{3}\d{2}-\d{8}$/;
+
+  $('t-add-name').addEventListener('click', function () {
+    if (!state.crew.team) { toast('Pilih team dulu.'); return; }
+    $('t-add-input-name').value = '';
+    $('t-add-input-badge').value = '';
+    $('t-add-error').textContent = '';
+    $('t-add-form').classList.remove('hidden');
+    $('t-add-input-name').focus();
+  });
+
+  $('t-add-cancel').addEventListener('click', function () {
+    $('t-add-form').classList.add('hidden');
+  });
+
+  $('t-add-save').addEventListener('click', function () {
+    var name = $('t-add-input-name').value.trim();
+    var badge = $('t-add-input-badge').value.trim().toUpperCase();
+
+    if (!name) { $('t-add-error').textContent = 'Nama belum diisi.'; return; }
+    if (!BADGE_PATTERN.test(badge)) {
+      $('t-add-error').textContent = 'Format kode: BRA09-240600XX (3 huruf, 2 angka, strip, 8 angka).';
+      return;
+    }
+    var exists = effectiveRoster().some(function (person) {
+      return person.name.toLowerCase() === name.toLowerCase();
+    });
+    if (exists) { $('t-add-error').textContent = 'Nama ini sudah ada di roster.'; return; }
+
+    rosterExtra.added.push({ name: name, badge: badge, team: state.crew.team });
+    saveRosterExtra().then(function () {
+      $('t-add-form').classList.add('hidden');
+      renderCrew();
+      toast('Nama ditambahkan.');
+    });
+  });
 
   $('t-continue').addEventListener('click', function () {
     if (this.disabled) return;
@@ -1910,7 +2005,10 @@
     // photographs.
     state.form.condition = WT.OPTIONS.conditions[0].label;
 
-    WT.db.getPref('crew', null).then(function (crew) {
+    WT.db.getPref('rosterExtra', null).then(function (extra) {
+      if (extra) rosterExtra = extra;
+      return WT.db.getPref('crew', null);
+    }).then(function (crew) {
       if (crew && crew.reporter) {
         state.crew = {
           team: crew.team || '',
