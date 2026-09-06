@@ -40,6 +40,23 @@
       <!-- Tick boxes, not a dropdown: the crew is picked once in the morning
            and the whole roster has to be visible while choosing. -->
       <div id="t-mates" class="picklist"></div>
+      <button id="t-add-name" type="button" class="link">+ Tambah nama ke roster</button>
+
+      <div id="t-add-form" class="add-name-form hidden">
+        <label class="field">
+          <span>Nama</span>
+          <input id="t-add-input-name" type="text" placeholder="Nama lengkap">
+        </label>
+        <label class="field">
+          <span>Kode</span>
+          <input id="t-add-input-badge" type="text" placeholder="BRA09-240600XX">
+        </label>
+        <p id="t-add-error" class="hint"></p>
+        <div class="add-name-actions">
+          <button id="t-add-cancel" type="button" class="secondary">Batal</button>
+          <button id="t-add-save" type="button" class="primary">Simpan</button>
+        </div>
+      </div>
     </div>
 
     <button id="t-continue" class="primary" disabled>Lanjut</button>
