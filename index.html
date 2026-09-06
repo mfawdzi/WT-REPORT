@@ -172,6 +172,13 @@
          than getUserMedia, and it gives the full-quality capture. -->
     <input id="camera-input" type="file" accept="image/*" capture="environment" hidden>
 
+    <!-- Full-size preview: tapping a thumbnail in the strip opens the actual
+         stored photograph here, not just the small thumbnail. -->
+    <div id="photo-preview" class="photo-preview hidden">
+      <img id="photo-preview-img" alt="">
+      <button id="photo-preview-close" type="button" class="preview-close">Tutup</button>
+    </div>
+
     <!-- Custom camera session: stays open across all three shots so the
          operator taps the shutter three times without the native camera app
          closing and reopening in between. Falls back to camera-input above
