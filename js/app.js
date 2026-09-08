@@ -959,9 +959,26 @@
       var cropX = (vw - cropW) / 2;
       var cropY = (vh - cropH) / 2;
 
+      // Force a fixed 1600x1200 output regardless of the device's actual
+      // camera resolution/aspect ratio: crop the zoomed region further to a
+      // 4:3 rectangle (centered), then draw it into a 1600x1200 canvas.
+      var OUTPUT_W = 1600;
+      var OUTPUT_H = 1200;
+      var targetAspect = OUTPUT_W / OUTPUT_H;
+      var srcAspect = cropW / cropH;
+      if (srcAspect > targetAspect) {
+        var newCropW = cropH * targetAspect;
+        cropX += (cropW - newCropW) / 2;
+        cropW = newCropW;
+      } else if (srcAspect < targetAspect) {
+        var newCropH = cropW / targetAspect;
+        cropY += (cropH - newCropH) / 2;
+        cropH = newCropH;
+      }
+
       var canvas = document.createElement('canvas');
-      canvas.width = vw;
-      canvas.height = vh;
+      canvas.width = OUTPUT_W;
+      canvas.height = OUTPUT_H;
       canvas.getContext('2d').drawImage(
         video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height
       );
