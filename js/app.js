@@ -891,6 +891,17 @@
     }
   }
 
+  /**
+   * Digital zoom, not hardware zoom. Chrome's own zoom capability
+   * (MediaStreamTrack.getCapabilities().zoom) turned out to be unsupported on
+   * the phones this is actually used on -- Android Chrome included -- so
+   * relying on it left the slider hidden most of the time. A CSS scale on the
+   * preview plus a matching crop at capture time works on every phone, with
+   * no hardware dependency at all.
+   */
+  var ZOOM_MIN = 1;
+  var ZOOM_MAX = 3;
+
   function runCameraSession(stream, shotsWanted) {
     var overlay = $('burst-camera');
     var video = $('burst-video');
@@ -898,20 +909,33 @@
     var shutterBtn = $('burst-shutter');
     var cancelBtn = $('burst-cancel');
     var doneBtn = $('burst-done');
+    var zoomWrap = $('burst-zoom-wrap');
+    var zoomSlider = $('burst-zoom');
     var blobs = [];
+    var zoomLevel = ZOOM_MIN;
 
     function updateLabel() {
       countLabel.textContent = 'Foto ' + blobs.length + ' dari ' + shotsWanted;
       shutterBtn.disabled = blobs.length >= shotsWanted;
     }
 
+    function onZoomInput() {
+      zoomLevel = Number(zoomSlider.value);
+      // What is shown is what gets captured -- the preview is scaled by
+      // exactly the factor onShutter() will crop by.
+      video.style.transform = 'scale(' + zoomLevel + ')';
+    }
+
     function stop() {
       stream.getTracks().forEach(function (track) { track.stop(); });
       video.srcObject = null;
+      video.style.transform = '';
       overlay.classList.add('hidden');
+      zoomWrap.classList.add('hidden');
       shutterBtn.removeEventListener('click', onShutter);
       cancelBtn.removeEventListener('click', onCancel);
       doneBtn.removeEventListener('click', onDone);
+      zoomSlider.removeEventListener('input', onZoomInput);
     }
 
     function onCancel() {
@@ -925,10 +949,23 @@
 
     function onShutter() {
       if (blobs.length >= shotsWanted) return;
+
+      var vw = video.videoWidth;
+      var vh = video.videoHeight;
+      // The centre crop that matches what the scaled-up preview is showing --
+      // at zoomLevel 1 this is the full frame, at 2 it's the middle quarter.
+      var cropW = vw / zoomLevel;
+      var cropH = vh / zoomLevel;
+      var cropX = (vw - cropW) / 2;
+      var cropY = (vh - cropH) / 2;
+
       var canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.width = vw;
+      canvas.height = vh;
+      canvas.getContext('2d').drawImage(
+        video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height
+      );
+
       shutterBtn.disabled = true;
       playShutterSound();
       canvas.toBlob(function (blob) {
@@ -944,44 +981,18 @@
     shutterBtn.addEventListener('click', onShutter);
     cancelBtn.addEventListener('click', onCancel);
     doneBtn.addEventListener('click', onDone);
+    zoomSlider.addEventListener('input', onZoomInput);
+
+    zoomSlider.min = ZOOM_MIN;
+    zoomSlider.max = ZOOM_MAX;
+    zoomSlider.step = 0.1;
+    zoomSlider.value = ZOOM_MIN;
+    video.style.transform = '';
 
     video.srcObject = stream;
     overlay.classList.remove('hidden');
+    zoomWrap.classList.remove('hidden');
     updateLabel();
-    setupZoom(stream);
-  }
-
-  /**
-   * Wires the zoom slider to the camera's own zoom, when the phone reports
-   * one. Support is inconsistent -- mainly Chrome on Android -- so the slider
-   * stays hidden entirely rather than showing a control that does nothing.
-   */
-  function setupZoom(stream) {
-    var wrap = $('burst-zoom-wrap');
-    var slider = $('burst-zoom');
-    wrap.classList.add('hidden');
-    slider.oninput = null;
-
-    var track = stream.getVideoTracks()[0];
-    if (!track || typeof track.getCapabilities !== 'function') return;
-
-    var capabilities;
-    try { capabilities = track.getCapabilities(); } catch (e) { return; }
-    if (!capabilities || !capabilities.zoom) return;
-
-    var settings = (typeof track.getSettings === 'function' && track.getSettings()) || {};
-
-    slider.min = capabilities.zoom.min;
-    slider.max = capabilities.zoom.max;
-    slider.step = capabilities.zoom.step || 0.1;
-    slider.value = settings.zoom || capabilities.zoom.min;
-
-    slider.oninput = function () {
-      track.applyConstraints({ advanced: [{ zoom: Number(slider.value) }] })
-        .catch(function () { /* mid-session zoom failed -- leave the slider be */ });
-    };
-
-    wrap.classList.remove('hidden');
   }
 
     $('pick-gallery').addEventListener('click', function () {
