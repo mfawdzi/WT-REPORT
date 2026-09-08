@@ -694,3 +694,33 @@ button {
   font-size: 16px;
   line-height: 1;
 }
+
+/* ── Camera zoom slider ─────────────────────────────────────────────── */
+
+.burst-zoom-wrap {
+  position: absolute;
+  bottom: calc(116px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80%, 320px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+.burst-zoom-wrap.hidden { display: none; }
+
+.burst-zoom-label {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  width: 14px;
+  text-align: center;
+}
+
+.burst-zoom {
+  flex: 1;
+  height: 28px;
+}
