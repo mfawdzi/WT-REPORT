@@ -842,7 +842,12 @@
     }
 
     navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1600 },
+        height: { ideal: 1200 },
+        aspectRatio: { ideal: 4 / 3 }
+      },
       audio: false
     }).then(function (stream) {
       runCameraSession(stream, room);
@@ -943,6 +948,40 @@
     video.srcObject = stream;
     overlay.classList.remove('hidden');
     updateLabel();
+    setupZoom(stream);
+  }
+
+  /**
+   * Wires the zoom slider to the camera's own zoom, when the phone reports
+   * one. Support is inconsistent -- mainly Chrome on Android -- so the slider
+   * stays hidden entirely rather than showing a control that does nothing.
+   */
+  function setupZoom(stream) {
+    var wrap = $('burst-zoom-wrap');
+    var slider = $('burst-zoom');
+    wrap.classList.add('hidden');
+    slider.oninput = null;
+
+    var track = stream.getVideoTracks()[0];
+    if (!track || typeof track.getCapabilities !== 'function') return;
+
+    var capabilities;
+    try { capabilities = track.getCapabilities(); } catch (e) { return; }
+    if (!capabilities || !capabilities.zoom) return;
+
+    var settings = (typeof track.getSettings === 'function' && track.getSettings()) || {};
+
+    slider.min = capabilities.zoom.min;
+    slider.max = capabilities.zoom.max;
+    slider.step = capabilities.zoom.step || 0.1;
+    slider.value = settings.zoom || capabilities.zoom.min;
+
+    slider.oninput = function () {
+      track.applyConstraints({ advanced: [{ zoom: Number(slider.value) }] })
+        .catch(function () { /* mid-session zoom failed -- leave the slider be */ });
+    };
+
+    wrap.classList.remove('hidden');
   }
 
     $('pick-gallery').addEventListener('click', function () {
