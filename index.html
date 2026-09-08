@@ -205,6 +205,13 @@
       <div class="burst-status">
         <span id="burst-count"></span>
       </div>
+      <!-- Hidden by default; shown only when the phone's camera actually
+           reports a zoom capability (mainly Chrome on Android). -->
+      <div id="burst-zoom-wrap" class="burst-zoom-wrap hidden">
+        <span class="burst-zoom-label">−</span>
+        <input id="burst-zoom" type="range" class="burst-zoom">
+        <span class="burst-zoom-label">+</span>
+      </div>
       <div class="burst-controls">
         <button id="burst-cancel" type="button" class="burst-side">Batal</button>
         <button id="burst-shutter" type="button" class="burst-shutter" aria-label="Jepret"></button>
