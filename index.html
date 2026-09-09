@@ -196,7 +196,7 @@
       <button id="photo-preview-close" type="button" class="preview-close">Tutup</button>
     </div>
 
-    <!-- Custom camera session: stays open across all three shots so the
+<!-- Custom camera session: stays open across all three shots so the
          operator taps the shutter three times without the native camera app
          closing and reopening in between. Falls back to camera-input above
          if getUserMedia is denied/unsupported. -->
@@ -207,6 +207,9 @@
       <div class="burst-status">
         <span id="burst-count"></span>
       </div>
+      <!-- One small thumbnail per shot taken this session -- the actual proof
+           a photo landed, not just a number going up. -->
+      <div id="burst-thumbs" class="burst-thumbs"></div>
       <!-- Hidden by default; shown only when the phone's camera actually
            reports a zoom capability (mainly Chrome on Android). -->
       <div id="burst-zoom-wrap" class="burst-zoom-wrap hidden">
@@ -219,17 +222,6 @@
         <button id="burst-shutter" type="button" class="burst-shutter" aria-label="Jepret"></button>
         <button id="burst-done" type="button" class="burst-side">Selesai</button>
       </div>
-    </div>
-
-    <!-- Custom burst camera: shows the live feed and fires 3 shots on its own,
-         so the operator taps once instead of hitting the shutter three times.
-         Falls back to camera-input above if getUserMedia is denied/unsupported. -->
-    <div id="burst-camera" class="burst-camera hidden">
-      <video id="burst-video" playsinline autoplay muted></video>
-      <div class="burst-status">
-        <span id="burst-count"></span>
-      </div>
-      <button id="burst-cancel" type="button" class="burst-cancel">Batal</button>
     </div>
     <!-- No `capture`, so the picker offers the library. Multiple, because
          picking the three shots of one point in one go is how a gallery is
