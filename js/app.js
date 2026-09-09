@@ -900,7 +900,7 @@
    * no hardware dependency at all.
    */
   var ZOOM_MIN = 1;
-  var ZOOM_MAX = 3;
+  var ZOOM_MAX = 10;
 
   function runCameraSession(stream, shotsWanted) {
     var overlay = $('burst-camera');
