@@ -911,12 +911,31 @@
     var doneBtn = $('burst-done');
     var zoomWrap = $('burst-zoom-wrap');
     var zoomSlider = $('burst-zoom');
+    var thumbsBar = $('burst-thumbs');
+    var thumbUrls = [];
     var blobs = [];
     var zoomLevel = ZOOM_MIN;
 
     function updateLabel() {
       countLabel.textContent = 'Foto ' + blobs.length + ' dari ' + shotsWanted;
       shutterBtn.disabled = blobs.length >= shotsWanted;
+    }
+
+    /** Adds the just-taken shot to the little strip -- proof it landed,
+        not just a count going up. */
+    function addThumb(blob) {
+      var url = URL.createObjectURL(blob);
+      thumbUrls.push(url);
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      thumbsBar.appendChild(img);
+    }
+
+    function clearThumbs() {
+      thumbUrls.forEach(URL.revokeObjectURL);
+      thumbUrls = [];
+      thumbsBar.innerHTML = '';
     }
 
     function onZoomInput() {
@@ -932,6 +951,7 @@
       video.style.transform = '';
       overlay.classList.add('hidden');
       zoomWrap.classList.add('hidden');
+      clearThumbs();
       shutterBtn.removeEventListener('click', onShutter);
       cancelBtn.removeEventListener('click', onCancel);
       doneBtn.removeEventListener('click', onDone);
@@ -986,7 +1006,7 @@
       shutterBtn.disabled = true;
       playShutterSound();
       canvas.toBlob(function (blob) {
-        if (blob) blobs.push(blob);
+        if (blob) { blobs.push(blob); addThumb(blob); }
         updateLabel();
         // Closes on its own after the last shot -- same as tapping "Selesai".
         if (blobs.length >= shotsWanted) {
